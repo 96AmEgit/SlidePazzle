@@ -19,6 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
         puzzleBoard.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 1fr)`;
         puzzleBoard.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 1fr)`;
 
+        // パズルボードのサイズを動的に変更
+        const boardSizePx = Math.min(window.innerWidth * 0.8, 500);
+        puzzleBoard.style.width = `${boardSizePx}px`;
+        puzzleBoard.style.height = `${boardSizePx}px`;
+
         tiles = generateSolvablePuzzle();
         renderPuzzle();
     }
@@ -67,13 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPuzzle() {
         puzzleBoard.innerHTML = '';
+        const tileSize = puzzleBoard.offsetWidth / BOARD_SIZE;
         tiles.forEach((number, index) => {
             const tile = document.createElement('div');
             tile.className = 'tile';
             // タイルのフォントサイズをマス数に応じて調整
-            if (BOARD_SIZE > 3) {
-                tile.style.fontSize = `calc(2rem / ${BOARD_SIZE - 2})`;
-            }
+            tile.style.fontSize = `${tileSize / 3.5}px`;
 
             if (number === null) {
                 tile.classList.add('empty');
@@ -92,17 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // マウスとタッチの両方を処理する共通の関数
     function handlePointerDown(e) {
         if (e.target.classList.contains('empty')) return;
         
         isDragging = true;
         draggedTile = e.target;
         
+        // タッチイベントの場合は最初の指の座標を取得
         if (e.type === 'touchstart') {
             initialX = e.touches[0].clientX;
             initialY = e.touches[0].clientY;
-            e.preventDefault();
-        } else {
+            e.preventDefault(); // スクロールを防ぐ
+        } else { // マウスイベントの場合
             initialX = e.clientX;
             initialY = e.clientY;
         }
@@ -120,11 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging) return;
         
         let clientX, clientY;
+        // タッチイベントの場合は最初の指の座標を取得
         if (e.type === 'touchmove') {
             clientX = e.touches[0].clientX;
             clientY = e.touches[0].clientY;
-            e.preventDefault();
-        } else {
+            e.preventDefault(); // スクロールを防ぐ
+        } else { // マウスイベントの場合
             clientX = e.clientX;
             clientY = e.clientY;
         }
@@ -141,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const draggedIndex = parseInt(draggedTile.dataset.index);
         const emptyTile = document.querySelector('.tile.empty');
         const emptyRect = emptyTile.getBoundingClientRect();
+        
         const tileRect = draggedTile.getBoundingClientRect();
         
         if (
@@ -158,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
+        // スタイルをリセット
         draggedTile.style.position = '';
         draggedTile.style.zIndex = '';
         draggedTile.style.transform = '';
@@ -211,7 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ハンバーガーメニューの開閉
-    menuBtn.addEventListener('click', () => {
+    menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // イベントの伝播を停止
         menuContent.style.display = menuContent.style.display === 'block' ? 'none' : 'block';
     });
 
