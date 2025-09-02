@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const puzzleBoard = document.getElementById('puzzle-board');
     const message = document.getElementById('message');
-    const BOARD_SIZE = 3;
+    const menuBtn = document.querySelector('.menu-btn');
+    const menuContent = document.getElementById('menu-options');
+    let BOARD_SIZE = 3;
     let tiles = [];
     let emptyTileIndex;
 
@@ -13,6 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function createNewPuzzle() {
         message.textContent = '';
         puzzleBoard.innerHTML = '';
+        // ボードのスタイルを更新
+        puzzleBoard.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 1fr)`;
+        puzzleBoard.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 1fr)`;
+
         tiles = generateSolvablePuzzle();
         renderPuzzle();
     }
@@ -64,6 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
         tiles.forEach((number, index) => {
             const tile = document.createElement('div');
             tile.className = 'tile';
+            // タイルのフォントサイズをマス数に応じて調整
+            if (BOARD_SIZE > 3) {
+                tile.style.fontSize = `calc(2rem / ${BOARD_SIZE - 2})`;
+            }
+
             if (number === null) {
                 tile.classList.add('empty');
                 emptyTileIndex = index;
@@ -81,19 +92,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // マウスとタッチの両方を処理する共通の関数
     function handlePointerDown(e) {
         if (e.target.classList.contains('empty')) return;
         
         isDragging = true;
         draggedTile = e.target;
         
-        // タッチイベントの場合は最初の指の座標を取得
         if (e.type === 'touchstart') {
             initialX = e.touches[0].clientX;
             initialY = e.touches[0].clientY;
-            e.preventDefault(); // スクロールを防ぐ
-        } else { // マウスイベントの場合
+            e.preventDefault();
+        } else {
             initialX = e.clientX;
             initialY = e.clientY;
         }
@@ -111,12 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isDragging) return;
         
         let clientX, clientY;
-        // タッチイベントの場合は最初の指の座標を取得
         if (e.type === 'touchmove') {
             clientX = e.touches[0].clientX;
             clientY = e.touches[0].clientY;
-            e.preventDefault(); // スクロールを防ぐ
-        } else { // マウスイベントの場合
+            e.preventDefault();
+        } else {
             clientX = e.clientX;
             clientY = e.clientY;
         }
@@ -133,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const draggedIndex = parseInt(draggedTile.dataset.index);
         const emptyTile = document.querySelector('.tile.empty');
         const emptyRect = emptyTile.getBoundingClientRect();
-        
         const tileRect = draggedTile.getBoundingClientRect();
         
         if (
@@ -151,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // スタイルをリセット
         draggedTile.style.position = '';
         draggedTile.style.zIndex = '';
         draggedTile.style.transform = '';
@@ -203,6 +209,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return tiles[BOARD_SIZE * BOARD_SIZE - 1] === null;
     }
+
+    // ハンバーガーメニューの開閉
+    menuBtn.addEventListener('click', () => {
+        menuContent.style.display = menuContent.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // サイズ変更の処理
+    document.querySelectorAll('#menu-options a').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const newSize = parseInt(e.target.dataset.size);
+            if (newSize !== BOARD_SIZE) {
+                BOARD_SIZE = newSize;
+                createNewPuzzle();
+            }
+            menuContent.style.display = 'none';
+        });
+    });
+
+    // メニューの外をクリックで閉じる
+    document.addEventListener('click', (e) => {
+        if (!menuBtn.contains(e.target) && !menuContent.contains(e.target)) {
+            menuContent.style.display = 'none';
+        }
+    });
 
     createNewPuzzle();
 });
