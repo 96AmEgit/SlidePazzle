@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let tiles = [];
     let emptyTileIndex;
 
+    // ドラッグ＆ドロップ関連の変数
+    let isDragging = false;
+    let draggedTile = null;
+    let initialX, initialY;
+
     function createNewPuzzle() {
         message.textContent = '';
         puzzleBoard.innerHTML = '';
@@ -69,11 +74,77 @@ document.addEventListener('DOMContentLoaded', () => {
             puzzleBoard.appendChild(tile);
         });
 
+        // クリックとドラッグの両方のイベントを追加
         document.querySelectorAll('.tile').forEach(tile => {
             tile.addEventListener('click', handleTileClick);
+            tile.addEventListener('mousedown', handleMouseDown);
         });
     }
+    
+    // --- ドラッグ操作のための関数 ---
+    
+    function handleMouseDown(e) {
+        // 空のタイルはドラッグできない
+        if (e.target.classList.contains('empty')) return;
+        
+        isDragging = true;
+        draggedTile = e.target;
+        initialX = e.clientX;
+        initialY = e.clientY;
 
+        draggedTile.style.position = 'relative';
+        draggedTile.style.zIndex = 100;
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    function handleMouseMove(e) {
+        if (!isDragging) return;
+        
+        const dx = e.clientX - initialX;
+        const dy = e.clientY - initialY;
+        
+        draggedTile.style.transform = `translate(${dx}px, ${dy}px)`;
+    }
+    
+    function handleMouseUp(e) {
+        if (!isDragging) return;
+        
+        const draggedIndex = parseInt(draggedTile.dataset.index);
+        const emptyTile = document.querySelector('.tile.empty');
+        const emptyRect = emptyTile.getBoundingClientRect();
+        
+        const tileRect = draggedTile.getBoundingClientRect();
+        
+        // ドロップされた位置が空のタイルと重なるか判定
+        if (
+            tileRect.left < emptyRect.right &&
+            tileRect.right > emptyRect.left &&
+            tileRect.top < emptyRect.bottom &&
+            tileRect.bottom > emptyRect.top &&
+            isMovable(draggedIndex)
+        ) {
+            swapTiles(draggedIndex, emptyTileIndex);
+            renderPuzzle();
+            if (isSolved()) {
+                message.textContent = 'クリア！おめでとうございます！';
+                setTimeout(createNewPuzzle, 1500);
+            }
+        }
+        
+        // スタイルをリセット
+        draggedTile.style.position = '';
+        draggedTile.style.zIndex = '';
+        draggedTile.style.transform = '';
+        isDragging = false;
+        draggedTile = null;
+        
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    }
+
+    // 元のクリック関数（ドラッグ後も動作）
     function handleTileClick(event) {
         const clickedTile = event.target;
         const clickedIndex = parseInt(clickedTile.dataset.index);
