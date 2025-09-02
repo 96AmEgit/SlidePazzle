@@ -74,41 +74,60 @@ document.addEventListener('DOMContentLoaded', () => {
             puzzleBoard.appendChild(tile);
         });
 
-        // クリックとドラッグの両方のイベントを追加
         document.querySelectorAll('.tile').forEach(tile => {
             tile.addEventListener('click', handleTileClick);
-            tile.addEventListener('mousedown', handleMouseDown);
+            tile.addEventListener('mousedown', handlePointerDown);
+            tile.addEventListener('touchstart', handlePointerDown, { passive: false });
         });
     }
-    
-    // --- ドラッグ操作のための関数 ---
-    
-    function handleMouseDown(e) {
-        // 空のタイルはドラッグできない
+
+    // マウスとタッチの両方を処理する共通の関数
+    function handlePointerDown(e) {
         if (e.target.classList.contains('empty')) return;
         
         isDragging = true;
         draggedTile = e.target;
-        initialX = e.clientX;
-        initialY = e.clientY;
+        
+        // タッチイベントの場合は最初の指の座標を取得
+        if (e.type === 'touchstart') {
+            initialX = e.touches[0].clientX;
+            initialY = e.touches[0].clientY;
+            e.preventDefault(); // スクロールを防ぐ
+        } else { // マウスイベントの場合
+            initialX = e.clientX;
+            initialY = e.clientY;
+        }
 
         draggedTile.style.position = 'relative';
         draggedTile.style.zIndex = 100;
         
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('mousemove', handlePointerMove);
+        document.addEventListener('touchmove', handlePointerMove, { passive: false });
+        document.addEventListener('mouseup', handlePointerUp);
+        document.addEventListener('touchend', handlePointerUp);
     }
     
-    function handleMouseMove(e) {
+    function handlePointerMove(e) {
         if (!isDragging) return;
         
-        const dx = e.clientX - initialX;
-        const dy = e.clientY - initialY;
+        let clientX, clientY;
+        // タッチイベントの場合は最初の指の座標を取得
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+            e.preventDefault(); // スクロールを防ぐ
+        } else { // マウスイベントの場合
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        const dx = clientX - initialX;
+        const dy = clientY - initialY;
         
         draggedTile.style.transform = `translate(${dx}px, ${dy}px)`;
     }
     
-    function handleMouseUp(e) {
+    function handlePointerUp(e) {
         if (!isDragging) return;
         
         const draggedIndex = parseInt(draggedTile.dataset.index);
@@ -117,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const tileRect = draggedTile.getBoundingClientRect();
         
-        // ドロップされた位置が空のタイルと重なるか判定
         if (
             tileRect.left < emptyRect.right &&
             tileRect.right > emptyRect.left &&
@@ -140,11 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
         isDragging = false;
         draggedTile = null;
         
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handlePointerMove);
+        document.removeEventListener('touchmove', handlePointerMove);
+        document.removeEventListener('mouseup', handlePointerUp);
+        document.removeEventListener('touchend', handlePointerUp);
     }
 
-    // 元のクリック関数（ドラッグ後も動作）
     function handleTileClick(event) {
         const clickedTile = event.target;
         const clickedIndex = parseInt(clickedTile.dataset.index);
